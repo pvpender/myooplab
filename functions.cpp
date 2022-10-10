@@ -16,8 +16,10 @@ Composition::Composition() {
 }
 
 Composition::Composition(const Composition& comp) {
+    delete[] compName;
     compName = new char[strlen(comp.compName) + 1];
     strcpy_s(compName, strlen(comp.compName) + 1, comp.compName);
+    delete[] compAuthor;
     compAuthor = new char[strlen(comp.compAuthor) + 1];
     strcpy_s(compAuthor, strlen(comp.compAuthor) + 1, comp.compAuthor);
     compFeelMood = comp.compFeelMood;
@@ -25,8 +27,10 @@ Composition::Composition(const Composition& comp) {
 }
 
 Composition::Composition(const char* Name, const char* Author, std::int32_t feelMood, std::int32_t speedMood) {
+    delete[] compName;
     compName = new char[strlen(Name) + 1];
     strcpy_s(compName, strlen(Name)+1, Name);
+    delete[] compAuthor;
     compAuthor = new char[strlen(Author) + 1];
     strcpy_s(compAuthor, strlen(Author)+1, Author);
     compFeelMood = feelMood;
@@ -88,6 +92,14 @@ void Composition::read(std::istream& file) {
     file.read((char*)&compSpeedMood, sizeof(int32_t));
 }
 
+void Composition::out(uint32_t i) {
+    std::cout << "Composition " << i << ":\n"
+        << compName << ' '
+        << compAuthor << ' '
+        << compFeelMood << ' '
+        << compSpeedMood << std::endl;
+}
+
 Playlist::Playlist() {
     objects = NULL;
     count = 0;
@@ -99,7 +111,8 @@ Playlist::Playlist(const Playlist& obj) {
     objects = new Composition[count];
     allocated = count;
     for (uint32_t i = 0; i < count; i++) {
-        objects[i].copy(obj.getData(i));
+        //objects[i].copy(obj.getData(i));
+        objects[i] = *(obj.getData(i).clone());
     }
 }
 
@@ -119,30 +132,49 @@ Composition& Playlist::getData(std::uint32_t position) const {
 void Playlist::grow() {
     Composition* comp = new Composition[count * 2];
     for (auto i = 0; i < std::min(count, allocated); i++) {
-        comp[i].copy(this->getData(i));
+        //comp[i].copy(this->getData(i));
+        Composition t = this->getData(i);
+        comp[i] = *(t.clone());
     }
     delete[] objects;
     objects = comp;
     if (count == 1)
         allocated++;
-    allocated *= 2;
+    allocated = count * 2;
 }
 
 void Playlist::insert(uint32_t position, const Composition& obj) {
-    if (++count >= allocated) {
+    if (count + 1 >= allocated) {
         grow();
     }
-    for (uint32_t i = count-1; i > position; i--) {
-        objects[i].copy(objects[i - 1]);
+    count++;
+    if (allocated == 0)
+        objects = new Composition[1];
+    Composition* comp2 = new Composition[count];
+    allocated = count;
+    comp2[position] = *(obj.clone());
+    for (uint32_t i = 0; i < position; i++) {
+        comp2[i] = *(objects[i].clone());
     }
-    objects[position].copy(obj);
+    for (uint32_t i = position; i < count - 1; i++) {
+        comp2[i + 1] = *(objects[i].clone());
+    }
+    delete[] objects;
+    objects = comp2;
+    /*for (uint32_t i = count - 1; i > position; i--) {
+        objects[i].copy(objects[i - 1]);
+        //objects[i] = *(objects[i - 1].clone());
+    }
+    //objects[position].copy(obj);
+    objects[position] = *(obj.clone());*/
 }
 
 void Playlist::add(const Composition& obj) {
     if (count++ >= allocated) {
         grow();
     }
-    objects[count - 1].copy(obj);
+    //objects[count - 1].copy(obj);
+    objects[count - 1] = *(obj.clone());
 }
 
 void Playlist::set(uint32_t position, const Composition& obj) {
@@ -152,7 +184,19 @@ void Playlist::set(uint32_t position, const Composition& obj) {
 #endif
     }
     else {
-        objects[position].copy(obj);
+        //objects[position].copy(obj);
+        //objects[position] = *(obj.clone());
+        allocated = count;
+        Composition* comp = new Composition[count];
+        comp[position] = *(obj.clone());
+        for (uint32_t i = 0; i < position; i++) {
+            comp[i] = *(objects[i].clone());
+        }
+        for (uint32_t i = position + 1; i < count; i++) {
+            comp[i] = *(objects[i].clone());
+        }
+        delete[] objects;
+        objects = comp;
     }
 }
 
@@ -183,20 +227,31 @@ void Playlist::del(uint32_t position)
     }
     else {
         Composition* comp = new Composition[count];
-        for (uint32_t i = position; i < count - 1; i++) {
-            objects[i].copy(objects[i + 1]);
+        /*for (uint32_t i = position; i < count - 1; i++) {
+            //objects[i].copy(objects[i + 1]);
+            objects[i] = *(objects[i + 1].clone());
         }
         for (uint32_t i = position; i < count - 1; i++) {
-            comp[i].copy(this->getData(i));
+            //comp[i].copy(this->getData(i));
+            comp[i] = *(this->getData(i).clone());
+        }*/
+        for (uint32_t i = 0; i < position; i++) {
+            comp[i] = *(this->getData(i).clone());
+        }
+        for (uint32_t i = position + 1; i < count; i++) {
+            comp[i-1] = *(this->getData(i).clone());
         }
         delete[] objects;
         objects = comp;
         count--;
+        allocated = count;
     }
 }
 
 void Playlist::delAll() {
-    this->~Playlist();
+    //this->~Playlist();
+    delete[] objects;
+    objects = NULL;
     allocated = 0;
     count = 0;
 }
@@ -221,7 +276,8 @@ Composition& Playlist::getListFeel(int32_t startMood, int32_t endMood) const{
         Composition* comp = new Composition[myMap.size()];
         uint32_t iter = 0;
         for (auto const &pair : myVec) {
-            comp[iter++].copy(this->getData(pair.first));
+            //comp[iter++].copy(this->getData(pair.first));
+            comp[iter++] = *(this->getData(pair.first).clone());
         }
         return *comp;
     }
@@ -252,7 +308,8 @@ Composition& Playlist::getListSpeed(int32_t startMood, int32_t endMood) const{
         Composition* comp = new Composition[myMap.size()];
         uint32_t iter = 0;
         for (auto const& pair : myVec) {
-            comp[iter++].copy(this->getData(pair.first));
+            //comp[iter++].copy(this->getData(pair.first));
+            comp[iter++] = *(this->getData(pair.first).clone());
         }
         return *comp;
     }
@@ -281,12 +338,7 @@ bool Playlist::compare(const Playlist& obj) const {
 }
 void outPlaylist(const Playlist& play) {
     for (auto i = 0; i < play.getCount(); i++) {
-        Composition c = play.getData(i);
-        std::cout << "Composition " << i << ":\n" 
-            << c.getName() << ' '
-            << c.getAuthor() << ' '
-            << c.getFeelMood() << ' '
-            << c.getSpeedMood() << std::endl;
+        play.getData(i).out(i);
     }
 }
 Potpourri::Potpourri() {
@@ -324,10 +376,40 @@ Potpourri::~Potpourri() {
 }
 
 void Potpourri::write(std::ostream& file) {
-
+    Composition::write(file);
+    file.write((char*)&startFellMood, sizeof(int32_t));
+    file.write((char*)&endFellMood, sizeof(int32_t));
+    file.write((char*)&startSpeedMood, sizeof(int32_t));
+    file.write((char*)&endSpeedMood, sizeof(int32_t));
 }
 
 void Potpourri::read(std::istream& file) {
-
+    Composition::read(file);
+    file.read((char*)&startFellMood, sizeof(int32_t));
+    file.read((char*)&endFellMood, sizeof(int32_t));
+    file.read((char*)&startSpeedMood, sizeof(int32_t));
+    file.read((char*)&endSpeedMood, sizeof(int32_t));
 }
 
+void Potpourri::out(uint32_t i) {
+    std::cout << "Potpourri " << i << ":\n"
+        << this->getName() << ' '
+        << this->getAuthor() << ' '
+        << this->getFeelMood() << ' '
+        << this->getSpeedMood() << ' '
+        << startFellMood << ' '
+        << endFellMood << ' '
+        << startSpeedMood << ' '
+        << endSpeedMood << std::endl;
+}
+
+void Potpourri::copy(const Potpourri& obj) {
+    this->setName(obj.getName());
+    this->setAuthor(obj.getAuthor());
+    this->setFellMood(obj.getFeelMood());
+    this->setSpeedMood(obj.getSpeedMood());
+    startFellMood = obj.startFellMood;
+    endFellMood = obj.endFellMood;
+    startSpeedMood = obj.startSpeedMood;
+    endSpeedMood = obj.endSpeedMood;
+}
