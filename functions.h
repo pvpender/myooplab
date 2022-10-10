@@ -12,11 +12,13 @@ public:
     virtual ~Composition();
     void setName(const char* newName);
     void setAuthor(const char* newAuth);
-    void copy(const Composition& comp);
+    virtual void copy(const Composition& comp);
+    virtual Composition* clone() const { return new Composition(*this); }
     void setFellMood(const int32_t newFeel) { compFeelMood = newFeel; }
     void setSpeedMood(const int32_t newSpeed) { compSpeedMood = newSpeed; }
     virtual void write(std::ostream& file);
     virtual void read(std::istream& file);
+    virtual void out(uint32_t i);
     char* getName() const { return compName; };
     char* getAuthor() const { return compAuthor; };
     std::int32_t getFeelMood() const { return compFeelMood; }
@@ -64,6 +66,9 @@ public:
     virtual ~Potpourri();
     virtual void write(std::ostream& file);
     virtual void read(std::istream& file);
+    void out(uint32_t i);
+    void copy(const Potpourri& obj);
+    Composition* clone() const { return new Potpourri(*this); }
     int32_t getStartFeelMood() const { return startFellMood; }
     int32_t getEndFeelMood() const { return endFellMood; }
     int32_t getStartSpeedMood() const { return startSpeedMood; }
@@ -72,7 +77,6 @@ public:
     void setEndFeelMood(const int32_t newFeel) { endFellMood = newFeel; }
     void setStartSpeedMood(const int32_t newSpeed) { startFellMood = newSpeed; }
     void setEndSpeedMood(const int32_t newSpeed) { endFellMood = newSpeed; }
-
 private:
     int32_t startFellMood;
     int32_t endFellMood;
