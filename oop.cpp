@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include "functions.h"
 #include <assert.h>
 #include <limits.h>
@@ -88,9 +88,25 @@ int main()
 	delete comp1;
 	delete comp2;
 	delete comp3;
-
+	
 	outPlaylist(play);
+
+
+
+	play.delAll();
+
 	Composition* comp = new Composition("Test", "Author", 1, 1);
+	play.add(*comp);
+	play.insert(0, *comp);
+	outPlaylist(play);
+	play.delAll();
+	Potpourri* pop = new Potpourri("NEt", "Nikto", 0, 100, 40, 60);
+	play.add(*comp);
+	play.add(*pop);
+	play.insert(0, *pop);
 	std::cout << comp->getName() << "\t" << comp->getAuthor() << std::endl;
+	outPlaylist(play);
+	play.delAll();
 	delete comp;
+	delete pop;
 }
