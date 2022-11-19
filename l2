@@ -1,0 +1,44 @@
+#pragma once
+#include<stdio.h>
+template <typename K, typename V>
+class Tree
+{
+public:
+	Tree();
+	~Tree();
+
+private:
+	struct Item
+	{
+		V* data;
+		Item* right;
+		Item* left;
+		~Item() {
+			delete this->data;
+			delete this->right;
+			delete this->left;
+		}
+	};
+	Item* right;
+	Item* left;
+	int count;
+	int allocated;
+};
+
+template <typename K, typename V>
+Tree<K, V>::Tree()
+{
+	this->count = 0;
+	this->allocated = 0;
+	this->right = NULL;
+	this->left = NULL;
+}
+
+template <typename K, typename V>
+Tree<K,V>::~Tree()
+{
+	delete this->right;
+	delete this->left;
+	this->count = 0;
+	this->allocated = 0;
+}
